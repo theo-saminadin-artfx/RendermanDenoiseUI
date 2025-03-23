@@ -26,31 +26,38 @@ def isAovInVariance(aov_names: list[str]):
     "lpe" : "mse",
     "other" : "mse"
     }
+    
     variance_layers = []
     
     for aov in aov_names:
-        for key in variance_dict.keys():
-            if key in aov:  # Check if a variance key is in the AOV name
-                variance_layers.append(variance_dict[key])  # Get the corresponding value (variance layer)
-                
-            elif aov.lower() == "a" or "alpha":
-                variance_layers.append(variance_dict["alpha"])    
-            elif aov.lower() == "N" :
-                variance_layers.append(variance_dict["normal"])
-            elif aov.lower() == "P" :
-                variance_layers.append(variance_dict["position"])
-            elif "lpe" in aov.lower() :
-                variance_layers.append(variance_dict["lpe"])
-            else :
-                variance_layers.append(variance_dict["other"])
-    
+        if aov.lower() == "a" or aov.lower() == "alpha":
+            variance_layers.append(variance_dict["alpha"])   
+        elif aov.lower() == "albedo" :
+            variance_layers.append(variance_dict["albedo"])
+        elif aov.lower() == "specular" :
+            variance_layers.append(variance_dict["specular"])
+        elif aov.lower() == "diffuse" :
+            variance_layers.append(variance_dict["diffuse"])  
+        elif aov.lower() == "n" or aov.lower() == "normal" :
+            variance_layers.append(variance_dict["normal"])
+        elif aov.lower() == "p" or aov.lower() == "position" :
+            
+            variance_layers.append(variance_dict["position"])
+        elif "lpe" in aov.lower() :
+            variance_layers.append(variance_dict["lpe"])
+        else :
+            variance_layers.append(variance_dict["other"])
+    print(variance_layers)
     return variance_layers
 
 def addJsonAOV(FramesPath : str, aov_names : list[str], OutputFolder : str):
     JsonAovsToAdd = []
+    output_colors = []
+    current_output_color = {}
     variance_layers =  isAovInVariance(aov_names)
     OutputPathFile = os.path.join(OutputFolder, os.path.split(FramesPath)[1])
     for index, aov_name in enumerate(aov_names) :      
+        
         add_aov = {
             "name": aov_name,
 
@@ -83,12 +90,37 @@ def addJsonAOV(FramesPath : str, aov_names : list[str], OutputFolder : str):
                 { "read": { "filename": FramesPath, "layer": aov_name }, "write": { "filename": OutputPathFile, "layer": aov_name , "filters": [{ "type": "cutoff", "minValue": 0.0, "minCutoff": 0.00001, "maxValue": 1.0, "maxCutoff": 0.999}] }}
             ]
         }
-        if aov_name.lower() == "beauty" :
-            JsonAovsToAdd.append(add_beauty)
-        elif aov_name.lower() == "a" or "alpha":
-            JsonAovsToAdd.append(add_alpha) 
+        
+        add_color = {
+            "name": "color",
+            "input": {
+                "filename": FramesPath,
+                "layer": "Ci"
+            },
+            "input_variance": {
+                "filename": FramesPath,
+                "layer": "mse"
+            },
+            "outputs": []
+        } 
+        
+        
+        if aov_name.lower() == "a" or aov_name.lower() == "alpha":
+            JsonAovsToAdd.append(add_alpha)
+        elif aov_name.lower() == "beauty" :
+            JsonAovsToAdd.append(add_beauty)  
         else :
-            JsonAovsToAdd.append(add_aov)
+            output_colors.append({ "read": { "filename": FramesPath, "layer": aov_name }, "write": { "filename": OutputPathFile, "layer": aov_name } })  
+        # elif aov_name.lower() == "albedo" or aov_name.lower() == "diffuse" or aov_name.lower() == "specular" or  aov_name.lower() == "normal"   :
+        #     JsonAovsToAdd.append(add_aov)
+        
+            
+
+        if index == len(aov_names) - 1 :
+            
+            for output in output_colors :
+                add_color["outputs"].append(output)
+            JsonAovsToAdd.append(add_color)
     
     return JsonAovsToAdd
 
@@ -224,7 +256,7 @@ def startProcess(FramesDirectory, FrameRange):
     for index, aov in enumerate(RdmDenoiseUI.aov_list):
         if RdmDenoiseUI.checkbox_list[index].isChecked():
             selected_aovs.append(aov.text())
-    print("Selected AOVs : " + str(selected_aovs))
+    #print("Selected AOVs : " + str(selected_aovs))
     
     # Create the custom JSON
     createJson(frame_path,selected_aovs, FramesDirectory, FrameRange)
