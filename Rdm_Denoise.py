@@ -87,7 +87,17 @@ def addJsonAOV(FramesPath : str, aov_names : list[str], OutputFolder : str):
             "input_variance": { "filename": FramesPath, "layer": variance_layers[index] },
     
             "outputs": [
-                { "read": { "filename": FramesPath, "layer": aov_name }, "write": { "filename": OutputPathFile, "layer": aov_name , "filters": [{ "type": "cutoff", "minValue": 0.0, "minCutoff": 0.00001, "maxValue": 1.0, "maxCutoff": 0.999}] }}
+                { "read": { "filename": FramesPath, "layer": aov_name }, "write": { "filename": OutputPathFile, "layer": "alpha" , "filters": [{ "type": "cutoff", "minValue": 0.0, "minCutoff": 0.00001, "maxValue": 1.0, "maxCutoff": 0.99999}] }}
+            ]
+        }
+        add_depth = {
+            "name": aov_name,
+
+            "input": { "filename": FramesPath, "layer": aov_name },
+            "input_variance": { "filename": FramesPath, "layer": variance_layers[index] },
+    
+            "outputs": [
+                { "read": { "filename": FramesPath, "layer": aov_name }, "write": { "filename": OutputPathFile, "layer": aov_name , "filters": [{ "type": "cutoff", "minValue": 0.0, "minCutoff": 0.00001, "maxValue": 1.0, "maxCutoff": 0.99999}] }}
             ]
         }
         
@@ -104,8 +114,9 @@ def addJsonAOV(FramesPath : str, aov_names : list[str], OutputFolder : str):
             "outputs": []
         } 
         
-        
-        if aov_name.lower() == "a" or aov_name.lower() == "alpha":
+        if aov_name.lower() == "z" or aov_name.lower() == "depth" :
+            JsonAovsToAdd.append(add_depth)
+        elif aov_name.lower() == "a" or aov_name.lower() == "alpha":
             JsonAovsToAdd.append(add_alpha)
         elif aov_name.lower() == "beauty" :
             JsonAovsToAdd.append(add_beauty)  
